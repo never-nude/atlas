@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Atlas — A Layered World Map</title>
 <link href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css" rel="stylesheet" />
 <style>
@@ -28,7 +28,9 @@
 
   /* Layer switcher */
   #layers{position:absolute;top:56px;left:16px;z-index:5;background:var(--panel);border:1px solid var(--line);
-    border-radius:14px;padding:10px;backdrop-filter:blur(10px);width:212px}
+    border-radius:14px;padding:10px;backdrop-filter:blur(10px);width:212px;
+    max-height:calc(100vh - 72px);overflow-y:auto;overscroll-behavior:contain}
+  #layers .panel-head{position:sticky;top:0;background:var(--panel);z-index:1}
   #layers .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
     margin:8px 4px 5px;font-weight:600}
   #layers .grp:first-child{margin-top:2px}
@@ -139,6 +141,11 @@
   #minP{position:absolute;top:14px;right:50px;background:var(--chip);border:1px solid var(--line);color:var(--ink);
     width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;line-height:1}
   #panel.min .body{display:none}
+  #panel .body{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  /* bottom-sheet grab handle (mobile only) */
+  .grab{display:none;height:20px;position:relative;flex:none;touch-action:none;cursor:grab}
+  .grab::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    width:42px;height:5px;border-radius:3px;background:#46566e}
 
   /* deep-time date popover */
   #datepop{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);z-index:7;display:none;gap:9px;align-items:flex-end;
@@ -155,20 +162,29 @@
   #orrInset.collapsed .panel-head{padding-bottom:0}
 
   @media (max-width:700px){
-    #layers{width:auto;max-width:62vw;top:50px;left:10px;padding:8px 9px}
-    #legend{max-width:54vw;max-height:38vh;bottom:84px;left:10px;padding:9px 11px}
-    #panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;height:auto;max-height:78vh;
-      border-left:none;border-top:1px solid var(--line);border-radius:16px 16px 0 0;transform:translateY(101%)}
-    #panel.open{transform:translateY(0)}
+    #topbar{padding-top:calc(12px + env(safe-area-inset-top))}
+    #layers{width:auto;max-width:60vw;top:calc(50px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));padding:8px 9px}
+    #legend{max-width:58vw;max-height:30vh;bottom:calc(64px + env(safe-area-inset-bottom));left:calc(10px + env(safe-area-inset-left));padding:9px 11px}
+    /* declutter: drop the zoom +/- (pinch handles it) and the orrery inset on phones */
+    .maplibregl-ctrl-group{display:none!important}
+    #orrInset{display:none}
+    /* Two-detent country bottom sheet — map stays live & interactive above it */
+    #panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;height:88vh;max-height:88vh;
+      border-left:none;border-top:1px solid var(--line);border-radius:18px 18px 0 0;
+      transform:translateY(101%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+      padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -12px 40px rgba(0,0,0,.5)}
+    #panel.open{transform:translateY(0)}                 /* full detent */
+    #panel.open.peek{transform:translateY(46vh)}         /* peek detent → ~42vh visible */
     #panel.min .body{display:block}
-    #panel.open.min{transform:translateY(calc(100% - 58px))}
+    .grab{display:block}
+    #minP{display:none}
+    #panel header{padding-top:4px}
     #hint{display:none}
-    #timebar{bottom:10px;gap:6px;padding:6px 9px;flex-wrap:wrap;max-width:95vw;justify-content:center}
-    #timebar input[type=range]{width:88px}
-    #timebar #tbDate{min-width:0;width:100%;text-align:center;order:9}
-    #datepop{bottom:104px;flex-wrap:wrap;max-width:92vw;justify-content:center}
-    #orrInset{right:10px;bottom:auto;top:50px;width:130px}
-    #orrInset canvas{width:108px;height:108px}
+    #timebar{bottom:calc(10px + env(safe-area-inset-bottom));gap:5px;padding:6px 9px;flex-wrap:wrap;max-width:96vw;justify-content:center}
+    #timebar input[type=range]{width:84px}
+    #timebar #tbSpeedLbl{min-width:0}
+    #timebar #tbDate{min-width:0;width:100%;text-align:center;order:9;font-size:11px}
+    #datepop{bottom:calc(104px + env(safe-area-inset-bottom));flex-wrap:wrap;max-width:92vw;justify-content:center}
   }
   #skyTip{position:absolute;z-index:6;pointer-events:none;background:rgba(13,17,23,.96);
     border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:12.5px;color:var(--ink);
@@ -227,6 +243,7 @@
 <div id="hint">Drag to spin · scroll to zoom · click a country to drill in</div>
 
 <div id="panel">
+  <div class="grab" id="grab" title="Drag to resize"></div>
   <header>
     <button id="minP" title="Minimize">▾</button>
     <button id="closeP">×</button>
@@ -267,8 +284,10 @@ const map = new maplibregl.Map({
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:false}),"bottom-right");
 map.addControl(new maplibregl.AttributionControl({customAttribution:"Boundaries: Natural Earth · Data: see country panels"}),"bottom-right");
+// Touch arbitration: one-finger drag = spin globe, two-finger pinch = zoom, tap = select.
+try{ map.touchPitch.disable(); map.touchZoomRotate.disableRotation(); }catch(e){}
 
-let activeLayer="flow_drugs";
+let activeLayer="religion";
 let subOn=false;          // subnational mode active
 let currentISO=null;
 
@@ -309,7 +328,7 @@ map.on("load",()=>{
   wireInteractions();
   buildLayerUI();
   simEpoch=Date.now(); simDays=0; paused=false; simSpeed=524/1440; solarDate=new Date();   // default = 524× real time
-  setLayer(activeLayer);
+  setLayer("religion");
   startSpin();
   initSky();
   wireTimeBar(); updateTimeLabel();
@@ -675,24 +694,73 @@ function addFlowLayers(){
 
 function flowActive(){ return !!(flowKey && FLOWS[flowKey]); }
 
+let flowIso=null;                       // isolated category color (drug substance / migration type), or null
+function isMobileV(){ return window.matchMedia("(max-width:700px)").matches; }
+const ROLE_COL={source:"#2f9e6e", transit:"#d9a441", consumer:"#c0556b", none:"#26303f"};
+
 function setFlow(key){
-  flowKey = key;
+  flowKey = key; flowIso=null;
   const F=FLOWS[key];
   ["flow-lines","flow-dots"].forEach(id=>map.setLayoutProperty(id,"visibility","visible"));
-  // per-edge color (datasets without edge colors fall back to F.color via coalesce)
   map.setPaintProperty("flow-lines","line-color",["coalesce",["get","c"],F.color]);
   map.setPaintProperty("flow-dots","circle-color",["coalesce",["get","c"],F.dotColor||"#cfe2ff"]);
-  // dim the choropleth so arcs read clearly over a quiet globe
-  if(!subOn) map.setPaintProperty("fills","fill-opacity",0.45);
+  applyFlowStyle();                      // mobile opacity/width ramp + isolation state
+  setFlowBase(key);                      // base = roles (illicit) or dimmed popdensity (other flows)
   startFlowAnim();
   drawFlowLegend(key);
 }
 
 function clearFlow(){
-  flowKey=null;
+  flowKey=null; flowIso=null;
   if(flowAnim){ cancelAnimationFrame(flowAnim); flowAnim=null; }
   ["flow-lines","flow-dots"].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,"visibility","none"); });
 }
+
+/* Arc styling — brighter & thicker on phones; when a category is isolated, the rest fade to faint context. */
+function applyFlowStyle(){
+  if(!map.getLayer("flow-lines")) return;
+  const m=isMobileV();
+  const opI=["interpolate",["linear"],["get","w"], 0, m?0.34:0.14, 1, m?0.80:0.42];
+  const wI =["interpolate",["linear"],["get","w"], 0, m?1.1:0.5, 1, m?3.6:2.4];
+  const rI =["interpolate",["linear"],["get","w"], 0, m?1.7:1.1, 1, m?3.6:2.6];
+  map.setPaintProperty("flow-lines","line-opacity", flowIso?["case",["==",["get","c"],flowIso], opI, 0.05]:opI);
+  map.setPaintProperty("flow-lines","line-width", wI);
+  map.setPaintProperty("flow-dots","circle-opacity", flowIso?["case",["==",["get","c"],flowIso], 0.9, 0.04]:0.9);
+  map.setPaintProperty("flow-dots","circle-radius", rI);
+}
+
+function isIllicit(key){ return key==="drugs"||key==="arms"; }
+/* Roles strictly from arc endpoints: from-only=source, to-only=consumer, both=transit. Never interpolated. */
+function rolesFor(key, isoColor){
+  const F=FLOWS[key]; const froms=new Set(), tos=new Set();
+  F.edges.forEach(e=>{ if(isoColor && (e.c||F.color)!==isoColor) return; froms.add(e.from); tos.add(e.to); });
+  const role={};
+  froms.forEach(c=>{ role[c]= tos.has(c)?"transit":"source"; });
+  tos.forEach(c=>{ if(!froms.has(c)) role[c]="consumer"; });
+  return role;
+}
+/* Base choropleth under a flow: producer→transit→consumer for drugs/arms (grey = not in the edge list,
+   NOT interpolated); dimmed population density for the other flows (unchanged). */
+function setFlowBase(key){
+  if(subOn) return;
+  if(isIllicit(key)){
+    const role=rolesFor(key, flowIso), pairs=[];
+    Object.entries(role).forEach(([iso,r])=>{ pairs.push(iso, ROLE_COL[r]); });
+    map.setPaintProperty("fills","fill-color", pairs.length?["match",["get","iso3"], ...pairs, ROLE_COL.none]:ROLE_COL.none);
+    map.setPaintProperty("fills","fill-opacity",0.8);
+  } else {
+    map.setPaintProperty("fills","fill-color",colorExpr("popdensity"));
+    map.setPaintProperty("fills","fill-opacity",0.45);
+  }
+}
+/* Tap a legend category → isolate its arcs AND recolor the base to that substance's roles (one interaction). */
+function toggleFlowIso(color){
+  flowIso = (flowIso===color)?null:color;
+  applyFlowStyle();
+  if(flowActive()) setFlowBase(flowKey);
+  drawFlowLegend(flowKey);
+}
+window.addEventListener("resize",()=>{ if(flowActive()) applyFlowStyle(); });
 
 function startFlowAnim(){
   if(flowAnim) cancelAnimationFrame(flowAnim);
@@ -713,19 +781,28 @@ function drawFlowLegend(key){
   const F=FLOWS[key], el=document.getElementById("legend");
   let b=`<div class="lg-row" style="font-size:12px">${F.legend}</div>`;
   if(F.cats){
-    // multi-category key (e.g. drug substances) — one swatch per category
+    // multi-category key (e.g. drug substances) — tap a swatch to isolate that category
     F.cats.forEach(c=>{
-      b+=`<div class="lg-row" style="margin-top:4px"><span style="display:inline-block;width:22px;height:0;border-top:3px solid ${c.color};border-radius:3px;margin-right:8px"></span>${c.label}</div>`;
+      const on=flowIso===c.color, dim=flowIso&&!on;
+      b+=`<div class="lg-row lg-cat" data-c="${c.color}" style="margin-top:4px;cursor:pointer;opacity:${dim?0.4:1};${on?'font-weight:650':''}"><span style="display:inline-block;width:22px;height:0;border-top:3px solid ${c.color};border-radius:3px;margin-right:8px"></span>${c.label}${on?' ✓':''}</div>`;
     });
+    b+=`<div class="lg-row" style="color:var(--muted);font-size:10.5px;margin-top:5px">${flowIso?"Tap the highlighted entry to show all.":"Tap a category to isolate its routes."}</div>`;
   } else {
     b+=`<div class="lg-row" style="margin-top:6px"><span style="display:inline-block;width:26px;height:0;border-top:3px solid ${F.color};border-radius:3px;margin-right:8px"></span>flow path</div>`;
     b+=`<div class="lg-row"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${F.dotColor||'#cfe2ff'};margin:0 12px 0 9px"></span>direction of movement</div>`;
+  }
+  if(isIllicit(key)){
+    b+=`<div class="lg-row" style="margin-top:9px;color:var(--muted);font-size:10.5px">Country shading — role in ${flowIso?"this substance's":"these"} routes:</div>`;
+    [["Source",ROLE_COL.source],["Transit",ROLE_COL.transit],["Consumer",ROLE_COL.consumer],["Not in routes",ROLE_COL.none]].forEach(([lab,col])=>{
+      b+=`<div class="lg-row"><span class="sw" style="background:${col}"></span>${lab}</div>`;
+    });
   }
   b+=`<div class="lg-row" style="color:var(--muted);font-size:11px;margin-top:6px">Thicker = larger ${key==="cables"?"route":"flow"}. ${F.unit}.</div>`;
   if(F.note) b+=`<div class="lg-row" style="color:var(--muted);font-size:10.5px;font-style:italic;margin-top:6px;line-height:1.4">${F.note}</div>`;
   el.innerHTML=`<h3>${F.label}<span class="caret">▾</span></h3><div class="lg-body">${b}</div>`;
   el.classList.toggle("collapsed",legendCollapsed);
   el.querySelector("h3").onclick=()=>{ legendCollapsed=!legendCollapsed; el.classList.toggle("collapsed",legendCollapsed); };
+  el.querySelectorAll(".lg-cat").forEach(r=>r.onclick=ev=>{ ev.stopPropagation(); toggleFlowIso(r.dataset.c); });
 }
 
 /* ====================================================================
@@ -837,8 +914,7 @@ function setLayer(key){
     // flow is an OVERLAY mode: keep a base choropleth underneath, draw arcs on top
     const RASTERS={satellite:"sat",topo:"topo"};
     Object.values(RASTERS).forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,"visibility","none"); });
-    if(!subOn){ map.setPaintProperty("fills","fill-color",colorExpr("popdensity")); }
-    setFlow(cfg.flowKey);
+    setFlow(cfg.flowKey);   // setFlow → setFlowBase sets the base choropleth (roles for illicit, popdensity otherwise)
     return;
   }
   if(flowActive()){ clearFlow(); if(!subOn) map.setPaintProperty("fills","fill-opacity",1); }
@@ -910,7 +986,9 @@ const RELCOL=META.palettes.religion;
 
 function openCountry(p){
   currentISO=p.iso3; subOn=false; cleanupSub(); panelOpen=true;
-  document.getElementById("panel").classList.add("open"); document.getElementById("panel").classList.remove("min");
+  { const _pn=document.getElementById("panel"); _pn.style.transform=""; _pn.style.transition="";
+    _pn.classList.add("open"); _pn.classList.remove("min");
+    _pn.classList.toggle("peek", window.matchMedia("(max-width:700px)").matches); }   // phones open at the peek detent
   document.getElementById("minP").textContent="▾";
   document.getElementById("hint").style.right="398px";
   document.getElementById("pName").textContent=p.name;
@@ -988,12 +1066,31 @@ function openCountry(p){
   document.getElementById("pBody").innerHTML=h;
 }
 
-document.getElementById("closeP").onclick=()=>{
-  document.getElementById("panel").classList.remove("open","min");
+function closePanel(){
+  const pn=document.getElementById("panel");
+  pn.style.transition=""; pn.style.transform="";
+  pn.classList.remove("open","min","peek");
   document.getElementById("hint").style.right="16px";
   panelOpen=false; lastInteract=Date.now();
   if(subOn) drillOut();
-};
+}
+document.getElementById("closeP").onclick=closePanel;
+/* mobile bottom-sheet grab handle: drag peek ⇄ full, fling down to close (tap toggles) */
+(function(){
+  const pn=document.getElementById("panel"), grab=document.getElementById("grab");
+  if(!grab) return;
+  let sy=0, st=0, moved=0, on=false;
+  const vh=()=>window.innerHeight/100;
+  const baseT=()=>pn.classList.contains("peek")?46*vh():0;
+  grab.addEventListener("touchstart",e=>{ on=true; sy=e.touches[0].clientY; st=baseT(); moved=0; pn.style.transition="none"; lastInteract=Date.now(); },{passive:true});
+  grab.addEventListener("touchmove",e=>{ if(!on)return; moved=e.touches[0].clientY-sy; pn.style.transform="translateY("+Math.max(0,st+moved)+"px)"; },{passive:true});
+  grab.addEventListener("touchend",()=>{ if(!on)return; on=false; pn.style.transition=""; pn.style.transform="";
+    const peek=pn.classList.contains("peek");
+    if(Math.abs(moved)<8){ pn.classList.toggle("peek"); return; }       // tap toggles detent
+    if(peek){ if(moved>70) closePanel(); else if(moved<-45) pn.classList.remove("peek"); }
+    else { if(moved>70) pn.classList.add("peek"); }
+  });
+})();
 document.getElementById("minP").onclick=()=>{
   const pn=document.getElementById("panel"); const m=pn.classList.toggle("min");
   document.getElementById("minP").textContent=m?"▴":"▾";
