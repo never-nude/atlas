@@ -268,7 +268,7 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl({visualizePitch:false}),"bottom-right");
 map.addControl(new maplibregl.AttributionControl({customAttribution:"Boundaries: Natural Earth · Data: see country panels"}),"bottom-right");
 
-let activeLayer="religion";
+let activeLayer="flow_drugs";
 let subOn=false;          // subnational mode active
 let currentISO=null;
 
@@ -309,7 +309,7 @@ map.on("load",()=>{
   wireInteractions();
   buildLayerUI();
   simEpoch=Date.now(); simDays=0; paused=false; simSpeed=524/1440; solarDate=new Date();   // default = 524× real time
-  setLayer("religion");
+  setLayer(activeLayer);
   startSpin();
   initSky();
   wireTimeBar(); updateTimeLabel();
