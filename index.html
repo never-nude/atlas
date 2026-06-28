@@ -163,7 +163,9 @@
 
   @media (max-width:700px){
     #topbar{padding-top:calc(12px + env(safe-area-inset-top))}
-    #layers{width:auto;max-width:60vw;top:calc(50px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));padding:8px 9px}
+    #layers{width:auto;max-width:60vw;top:calc(50px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));padding:8px 9px;max-height:50vh}
+    #layers .layer-btn{padding:6px 8px;font-size:12.5px}
+    #layers .grp{margin:6px 4px 3px}
     #legend{max-width:58vw;max-height:30vh;bottom:calc(104px + env(safe-area-inset-bottom));left:calc(10px + env(safe-area-inset-left));padding:9px 11px}
     /* declutter: drop the zoom +/- (pinch handles it) and the orrery inset on phones */
     .maplibregl-ctrl-group{display:none!important}
@@ -901,7 +903,8 @@ function buildLayerUI(){
   });
   html+=`</div>`;
   host.innerHTML=html;
-  host.querySelectorAll(".layer-btn").forEach(b=>b.onclick=()=>setLayer(b.dataset.key));
+  host.querySelectorAll(".layer-btn").forEach(b=>b.onclick=()=>{ setLayer(b.dataset.key);
+    if(window.matchMedia("(max-width:700px)").matches) host.classList.add("collapsed"); });   // tidy away after picking on phones
   document.getElementById("layersHead").onclick=()=>host.classList.toggle("collapsed");
   if(window.innerWidth<=700) host.classList.add("collapsed");   // start tidy on phones
 }
