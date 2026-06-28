@@ -154,8 +154,8 @@
   #datepop label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
   #datepop input{background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:5px 7px;font-size:13px;width:64px}
   #datepop #dpEra{font-size:12px;color:#c4cfdd;padding-bottom:6px}
-  /* heliocentric inset orrery */
-  #orrInset{position:absolute;right:14px;bottom:72px;z-index:5;width:190px;background:var(--panel);
+  /* heliocentric inset orrery — removed from the UI */
+  #orrInset{display:none!important;position:absolute;right:14px;bottom:72px;z-index:5;width:190px;background:var(--panel);
     border:1px solid var(--line);border-radius:13px;padding:9px 11px 7px;backdrop-filter:blur(10px)}
   #orrInset canvas{width:168px;height:168px;display:block;margin-top:2px}
   #orrInset.collapsed canvas{display:none}
@@ -164,7 +164,7 @@
   @media (max-width:700px){
     #topbar{padding-top:calc(12px + env(safe-area-inset-top))}
     #layers{width:auto;max-width:60vw;top:calc(50px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));padding:8px 9px}
-    #legend{max-width:58vw;max-height:30vh;bottom:calc(64px + env(safe-area-inset-bottom));left:calc(10px + env(safe-area-inset-left));padding:9px 11px}
+    #legend{max-width:58vw;max-height:30vh;bottom:calc(104px + env(safe-area-inset-bottom));left:calc(10px + env(safe-area-inset-left));padding:9px 11px}
     /* declutter: drop the zoom +/- (pinch handles it) and the orrery inset on phones */
     .maplibregl-ctrl-group{display:none!important}
     #orrInset{display:none}
@@ -182,7 +182,7 @@
     #hint{display:none}
     #timebar{bottom:calc(10px + env(safe-area-inset-bottom));gap:5px;padding:6px 9px;flex-wrap:wrap;max-width:96vw;justify-content:center}
     #timebar input[type=range]{width:84px}
-    #timebar #tbSpeedLbl{min-width:0}
+    #timebar #tbSpeedLbl{display:none}
     #timebar #tbDate{min-width:0;width:100%;text-align:center;order:9;font-size:11px}
     #datepop{bottom:calc(104px + env(safe-area-inset-bottom));flex-wrap:wrap;max-width:92vw;justify-content:center}
   }
@@ -283,11 +283,11 @@ const map = new maplibregl.Map({
   center:[10,28], zoom:1.45, attributionControl:false, maxZoom:9
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:false}),"bottom-right");
-map.addControl(new maplibregl.AttributionControl({customAttribution:"Boundaries: Natural Earth · Data: see country panels"}),"bottom-right");
+map.addControl(new maplibregl.AttributionControl({compact:true, customAttribution:"Boundaries: Natural Earth · Data: see country panels"}),"bottom-right");
 // Touch arbitration: one-finger drag = spin globe, two-finger pinch = zoom, tap = select.
 try{ map.touchPitch.disable(); map.touchZoomRotate.disableRotation(); }catch(e){}
 
-let activeLayer="religion";
+let activeLayer="drugs";   // open on Drug routes by default
 let subOn=false;          // subnational mode active
 let currentISO=null;
 
@@ -328,7 +328,7 @@ map.on("load",()=>{
   wireInteractions();
   buildLayerUI();
   simEpoch=Date.now(); simDays=0; paused=false; simSpeed=524/1440; solarDate=new Date();   // default = 524× real time
-  setLayer("religion");
+  setLayer("drugs");   // default opening layer = Drug routes
   startSpin();
   initSky();
   wireTimeBar(); updateTimeLabel();
