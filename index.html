@@ -322,27 +322,29 @@ map.on("load",()=>{ try{
   map.addLayer({id:"topo",type:"raster",source:"topo",layout:{visibility:"none"},
     paint:{"raster-opacity":1,"raster-fade-duration":300}}, "fills");
 
-  // sun-driven day/night on the globe — fine grid keeps the terminator smooth (no faceting)
-  map.addSource("sunshade",{type:"geojson",data:sunGrid()});
-  map.addLayer({id:"sunshade",type:"fill",source:"sunshade",
-    paint:{"fill-color":"#02040a","fill-opacity":["coalesce",["get","op"],0],"fill-opacity-transition":{duration:1500}}});
-
   map.addLayer({id:"hover",type:"line",source:"world",
     paint:{"line-color":"#ffffff","line-width":1.6,"line-blur":0.4},filter:["==","iso3",""]});
 
-  addFlowLayers();
   wireInteractions();
   buildLayerUI();
   simEpoch=Date.now(); simDays=0; paused=false; simSpeed=524/1440; solarDate=new Date();   // default = 524× real time
   setLayer("religion");   // default opening layer = Religion (static choropleth — fast, reliable first paint)
   startSpin();
-  initSky();
   wireTimeBar(); updateTimeLabel();
-  sizeOrr(); drawOrr();
-  { const oh=document.getElementById("orrHead"); if(oh) oh.onclick=()=>document.getElementById("orrInset").classList.toggle("collapsed");
-    if(window.innerWidth<=700) document.getElementById("orrInset").classList.add("collapsed"); }   // tidy on phones
-  window.addEventListener("resize",()=>{ sizeOrr(); drawOrr(); });
-  updateSunShade();    // day/night now advances smoothly inside the master clock loop (startSpin)
+  document.getElementById("loading").style.display="none";
+
+  requestAnimationFrame(()=>{ try{
+    map.addSource("sunshade",{type:"geojson",data:sunGrid()});
+    map.addLayer({id:"sunshade",type:"fill",source:"sunshade",
+      paint:{"fill-color":"#02040a","fill-opacity":["coalesce",["get","op"],0],"fill-opacity-transition":{duration:1500}}}, "hover");
+    updateSunShade();
+    addFlowLayers();
+    initSky();
+    sizeOrr(); drawOrr();
+    { const oh=document.getElementById("orrHead"); if(oh) oh.onclick=()=>document.getElementById("orrInset").classList.toggle("collapsed");
+      if(window.innerWidth<=700) document.getElementById("orrInset").classList.add("collapsed"); }
+    window.addEventListener("resize",()=>{ sizeOrr(); drawOrr(); });
+  }catch(e2){ console.error("Atlas deferred init:",e2); } });
   }catch(_e){ console.error("Atlas init error:",_e); }
   finally{ document.getElementById("loading").style.display="none"; }
 });
@@ -1098,7 +1100,7 @@ function shadeGrid(){
 }
 function updateSunShade(){ if(!SUNFC||!map.getSource("sunshade"))return; shadeGrid(); map.getSource("sunshade").setData(SUNFC); }
 /* Opaque ocean base (fine grid → smooth, no banding) so the globe is solid and stars never show through */
-function oceanGrid(){ const feats=[],S=4,EW=180-1e-4;   // antimeridian-safe (no vertex exactly on ±180)
+function oceanGrid(){ const feats=[],S=6,EW=180-1e-4;   // antimeridian-safe (no vertex exactly on ±180)
   for(let la=-90; la<90; la+=S) for(let lo=-EW; lo<EW; lo+=S){ const lo2=Math.min(lo+S,EW);
     feats.push({type:"Feature",properties:{},geometry:{type:"Polygon",coordinates:[[[lo,la],[lo2,la],[lo2,la+S],[lo,la+S],[lo,la]]]}}); }
   return {type:"FeatureCollection",features:feats}; }
