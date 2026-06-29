@@ -314,6 +314,17 @@ function _atlasBoot(){ if(_atlasBooted) return; _atlasBooted=true; try{
       "fill-color-transition":{duration:500,delay:0},"fill-opacity-transition":{duration:400}}});
   map.addLayer({id:"borders",type:"line",source:"world",
     paint:{"line-color":"#05080f","line-width":0.5,"line-opacity-transition":{duration:400}}});
+  (function(){
+    var HS=10, cv=document.createElement("canvas"); cv.width=cv.height=HS;
+    var cx=cv.getContext("2d"); cx.clearRect(0,0,HS,HS);
+    cx.strokeStyle="rgba(8,12,20,0.82)"; cx.lineWidth=2.4; cx.lineCap="round";
+    cx.beginPath(); cx.moveTo(0,HS); cx.lineTo(HS,0); cx.stroke();
+    var im=cx.getImageData(0,0,HS,HS);
+    if(map.hasImage&&!map.hasImage("nodata-hatch")) map.addImage("nodata-hatch",{width:HS,height:HS,data:new Uint8Array(im.data.buffer)});
+  })();
+  map.addLayer({id:"nodata-hatch",type:"fill",source:"world",
+    paint:{"fill-pattern":"nodata-hatch","fill-opacity":0,"fill-opacity-transition":{duration:300}},
+    filter:["==",["get","iso3"],"___none___"]}, "borders");
   map.addSource("sat",{type:"raster",tileSize:256,maxzoom:19,
     tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
     attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});
@@ -1246,8 +1257,16 @@ function roleLabels(key){
     students:{source:"Origin",transit:"Both",consumer:"Destination"}};
   return M[key]||{source:"Source",transit:"Transit",consumer:"Consumer"};
 }
+function updateNoDataHatch(key){
+  if(!(map.getLayer && map.getLayer("nodata-hatch"))) return;
+  var f=FLOWS[key], prop=(f&&f.baseColorProp)?f.baseColorProp:("color_"+key);
+  var isDebt=(key==="govdebt"||key==="debtout"||key==="debtin");
+  if(isDebt && !subOn){ map.setFilter("nodata-hatch",["!",["has",prop]]); map.setPaintProperty("nodata-hatch","fill-opacity",0.9); }
+  else { map.setPaintProperty("nodata-hatch","fill-opacity",0); }
+}
 function setFlowBase(key){
   if(subOn) return;
+  updateNoDataHatch(key);
   if(FLOWS[key]&&FLOWS[key].geo){ map.setPaintProperty("fills","fill-color","#162130"); map.setPaintProperty("fills","fill-opacity",0.72); return; }
   if(FLOWS[key]&&FLOWS[key].baseColorProp){ map.setPaintProperty("fills","fill-color",["coalesce",["get",FLOWS[key].baseColorProp],DEBT_NODATA]); map.setPaintProperty("fills","fill-opacity",0.92); return; }
   const role=rolesFor(key, flowIso), pairs=[];
@@ -1631,6 +1650,7 @@ function setLayer(key){
   } else if(map.getLayer("sub-fills") && !isRaster){
     map.setPaintProperty("sub-fills","fill-color",["coalesce",["get","color_"+key],noDataFor(key)]);
   }
+  updateNoDataHatch(key);
   drawLegend(key);
 }
 
