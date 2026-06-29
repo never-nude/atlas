@@ -1301,8 +1301,8 @@ function _flowElevations(pts,pathMode){
   const dist=[0]; let total=0;
   for(let i=1;i<pts.length;i++){ total+=_angular(pts[i-1],pts[i]); dist[i]=total; }
   const far=Math.min(1,total/Math.PI);
-  const base=pathMode?32000:95000;
-  const peak=pathMode?(140000+260000*far):(440000+900000*far);
+  const base=pathMode?21000:60000;
+  const peak=pathMode?(92000+172000*far):(290000+595000*far);
   return pts.map((_,i)=>base+peak*Math.sin(Math.PI*(total?dist[i]/total:i/(pts.length-1||1))));
 }
 function _mercXY(p){
@@ -1358,7 +1358,7 @@ function _newFlow3DLayer(){
           vec4 p=projectTileWithElevation(pos,el), p0=projectTileWithElevation(a_start,a_e0), p1=projectTileWithElevation(a_end,a_e1);
           vec2 d=((p1.xy/max(p1.w,0.000001))-(p0.xy/max(p0.w,0.000001)))*u_viewport;
           vec2 n=length(d)>0.0001?normalize(vec2(-d.y,d.x)):vec2(0.0,1.0);
-          float zt=clamp((u_zoom-1.5)/7.5,0.0,1.0), px=mix(mix(2.0,4.6,a_w),mix(6.0,13.8,a_w),zt);
+          float zt=clamp((u_zoom-1.5)/7.5,0.0,1.0), px=mix(mix(1.2,2.7,a_w),mix(3.4,7.6,a_w),zt);
           p.xy+=n*a_side*px*2.0/u_viewport*p.w; gl_Position=p; v_color=a_color; v_w=a_w; }`;
       const vDot=head+`in vec2 a_pos; in float a_e; in float a_w; in vec4 a_color; uniform float u_zoom; out vec4 v_color; out float v_w;
         void main(){ gl_Position=projectTileWithElevation(a_pos,a_e);
