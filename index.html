@@ -428,6 +428,7 @@ function startSpin(){
   const orrOn=(()=>{const e=document.getElementById("orrInset");return e&&getComputedStyle(e).display!=="none";})();
   map.on("dragstart",()=>dragging=true); map.on("dragend",()=>dragging=false);
   function frame(t){
+    try{
     if(!last)last=t; const dt=Math.min((t-last)/1000,0.1); last=t;
     if(!paused){
       simDays += dt*(simSpeed/60);
@@ -447,6 +448,7 @@ function startSpin(){
       if(!FLOWGEO || FLOWGEO.key!==flowKey || FLOWGEO.focus!==flowFocusIso) buildFlowGeo(flowKey);
       const ds=map.getSource("flow-dots"); if(ds) ds.setData(flowDotsFC(((t-flowT0)/9000)%1));
     }
+    }catch(_e){ try{console.warn("atlas frame skipped:",_e&&_e.message);}catch(_){} }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
