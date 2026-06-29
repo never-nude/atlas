@@ -1362,13 +1362,13 @@ function _newFlow3DLayer(){
           p.xy+=n*a_side*px*2.0/u_viewport*p.w; gl_Position=p; v_color=a_color; v_w=a_w; }`;
       const vDot=head+`in vec2 a_pos; in float a_e; in float a_w; in vec4 a_color; uniform float u_zoom; out vec4 v_color; out float v_w;
         void main(){ gl_Position=projectTileWithElevation(a_pos,a_e);
-          float zt=clamp((u_zoom-1.5)/7.5,0.0,1.0); gl_PointSize=mix(mix(2.0,4.2,a_w),mix(5.0,10.0,a_w),zt);
+          float zt=clamp((u_zoom-1.5)/7.5,0.0,1.0); gl_PointSize=mix(mix(4.6,7.6,a_w),mix(9.0,17.0,a_w),zt);
           v_color=a_color; v_w=a_w; }`;
       const fLine=`#version 300 es\nprecision highp float; in vec4 v_color; in float v_w; out vec4 fragColor;
         void main(){ fragColor=vec4(v_color.rgb,v_color.a*mix(0.74,0.96,v_w)); }`;
       const fDot=`#version 300 es\nprecision highp float; in vec4 v_color; in float v_w; out vec4 fragColor;
         void main(){ vec2 q=gl_PointCoord*2.0-1.0; float d=dot(q,q); if(d>1.0) discard;
-          float a=smoothstep(1.0,0.15,d)*v_color.a*mix(0.82,1.0,v_w); fragColor=vec4(v_color.rgb,a); }`;
+          float a=smoothstep(1.0,0.15,d)*v_color.a*mix(0.82,1.0,v_w); vec3 col=mix(v_color.rgb,vec3(1.0),smoothstep(0.55,0.0,d)*0.7); fragColor=vec4(col,a); }`;
       const p=gl.createProgram();
       gl.attachShader(p,this._shader(gl,gl.VERTEX_SHADER,kind==="line"?vLine:vDot));
       gl.attachShader(p,this._shader(gl,gl.FRAGMENT_SHADER,kind==="line"?fLine:fDot));
