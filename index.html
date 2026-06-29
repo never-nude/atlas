@@ -246,7 +246,7 @@
 
 <div id="legend"></div>
 
-<div id="hint">Drag to spin · scroll to zoom · click a country to drill in</div>
+<div id="hint">Drag to spin · scroll to zoom · space to pause · click a country to drill in</div>
 
 <div id="panel">
   <div class="grab" id="grab" title="Drag to resize"></div>
@@ -365,6 +365,14 @@ function updateTimeLabel(){ const e=document.getElementById("tbDate"); if(e) e.t
 function wireTimeBar(){
   const pb=document.getElementById("tbPlay"), sp=document.getElementById("tbSpeed"), lbl=document.getElementById("tbSpeedLbl");
   if(pb) pb.onclick=()=>{ paused=!paused; pb.textContent=paused?"▶":"⏸"; };
+  /*spacebar*/ document.addEventListener("keydown",e=>{
+    if(e.code!=="Space" && e.key!==" ") return;
+    const el=e.target; if(el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)||el.isContentEditable)) return;
+    e.preventDefault();
+    paused=!paused; if(!paused) simLast=0;
+    const tb=document.getElementById("tbPlay"); if(tb) tb.textContent=paused?"▶":"⏸";
+    const pbn=document.getElementById("playBtn"); if(pbn) pbn.textContent=paused?"▶ Resume":"⏸ Pause";
+  });
   const nb=document.getElementById("tbNow");
   if(nb) nb.onclick=()=>{ simEpoch=Date.now(); simDays=0; simLast=0; solarDate=new Date(); updateTimeLabel(); updateSunShade(); };
   // Speed slider is logarithmic in multiples of REAL time: left end = 1× (real-time),
