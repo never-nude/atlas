@@ -952,12 +952,8 @@ const FLOWS = {
     unit: "millions of people (foreign-born stock)",
     desc: "Largest country-to-country migration corridors — number of people born in the origin country now living in the destination.",
     color: "#6ea8fe", dotColor:"#cfe2ff",
-    legend: "Each arc is a top global migration corridor; thickness = millions of people (foreign-born stock). Orange corridors are mainly displacement (refugees / forced).",
+    legend: "Each arc is a top global migration corridor; thickness = millions of people (foreign-born stock). Thickness scales with zoom for readability.",
     note: "Top corridors as documented in the IOM World Migration Report 2024, drawn from UN DESA International Migrant Stock 2020 (+ UNHCR for displacement). This is the documented top-20-or-so by stock, not every corridor; census timing and undercounting mean figures are estimates.",
-    cats: [
-      {label:"Labour / family migration", color:"#6ea8fe"},
-      {label:"Mainly displacement (refugees)", color:"#d4793a"}
-    ],
     sources: [
       {label:"IOM — World Migration Report 2024 (top corridors)", url:"https://worldmigrationreport.iom.int/what-we-do/world-migration-report-2024"},
       {label:"UN DESA — International Migrant Stock 2020", url:"https://www.un.org/development/desa/pd/content/international-migrant-stock"}
@@ -989,8 +985,8 @@ const FLOWS = {
       {from:"POL",to:"DEU",w:1.7},
       {from:"MAR",to:"FRA",w:1.5},
       {from:"DZA",to:"FRA",w:1.4},
-      {from:"MMR",to:"THA",w:1.9,c:"#d4793a"},          // mixed (incl. displacement)
-      {from:"AFG",to:"PAK",w:1.6,c:"#d4793a"},
+      {from:"MMR",to:"THA",w:1.9},          // mixed (incl. displacement)
+      {from:"AFG",to:"PAK",w:1.6},
       {from:"NPL",to:"IND",w:1.2},
       {from:"ROU",to:"ITA",w:1.1},
       {from:"PRI",to:"USA",w:1.2}
@@ -1205,8 +1201,8 @@ function clearFlow(){
 function applyFlowStyle(){
   if(!map.getLayer("flow-lines")) return;
   const m=isMobileV();
-  const wlo=m?1.1:0.7, whi=m?3.6:2.6, rlo=m?1.7:1.3, rhi=m?3.6:2.8;
-  const opI=["interpolate",["linear"],["get","w"], 0, m?0.40:0.24, 1, m?0.85:0.52];
+  const wlo=m?1.7:1.2, whi=m?4.4:3.2, rlo=m?1.9:1.5, rhi=m?4.0:3.0;
+  const opI=["interpolate",["linear"],["get","w"], 0, m?0.66:0.58, 1, m?0.95:0.90];
   const wI=["interpolate",["linear"],["zoom"], 1.5,["interpolate",["linear"],["get","w"],0,wlo,1,whi], 9,["interpolate",["linear"],["get","w"],0,wlo*3,1,whi*3]];
   const rI=["interpolate",["linear"],["zoom"], 1.5,["interpolate",["linear"],["get","w"],0,rlo,1,rhi], 9,["interpolate",["linear"],["get","w"],0,rlo*2.4,1,rhi*2.4]];
   map.setPaintProperty("flow-lines","line-opacity", flowIso?["case",["==",["get","c"],flowIso], opI, 0.05]:opI);
@@ -1270,7 +1266,7 @@ function buildFlowGeo(key){
     let pts;
     if(e.path){ pts=[]; for(let k=0;k<e.path.length-1;k++){ const sg=gcPoints(e.path[k],e.path[k+1],14); pts=pts.concat(k?sg.slice(1):sg); } }
     else { const a=ISO_CENTROID[e.from], b=ISO_CENTROID[e.to]; if(!a||!b) return; pts=gcPoints(a,b,48); }
-    const col=e.c||F.color, dotCol=e.dc||F.dotColor||"#cfe2ff";
+    const col=e.c||F.color, dotCol=e.dc||e.c||F.dotColor||"#cfe2ff";
     if(two){ const mid=Math.floor(pts.length/2);
       lines.push({type:"Feature",properties:{w:e.w/wmax,from:e.from,to:e.to,c:F.fromColor},geometry:{type:"LineString",coordinates:pts.slice(0,mid+1)}});
       lines.push({type:"Feature",properties:{w:e.w/wmax,from:e.from,to:e.to,c:F.toColor},geometry:{type:"LineString",coordinates:pts.slice(mid)}});
