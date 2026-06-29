@@ -410,6 +410,7 @@ function startSpin(){
   // Pause freezes the instant. Dragging / zooming only move your viewpoint — they never
   // change time, and the lit & dark sides stay correct for that instant from any angle.
   let last=0, dragging=false, lastShade=0;
+  const orrOn=(()=>{const e=document.getElementById("orrInset");return e&&getComputedStyle(e).display!=="none";})();
   map.on("dragstart",()=>dragging=true); map.on("dragend",()=>dragging=false);
   function frame(t){
     if(!last)last=t; const dt=Math.min((t-last)/1000,0.1); last=t;
@@ -424,9 +425,9 @@ function startSpin(){
       }
       // day/night glides with the spin — refresh ~15 Hz so the terminator never lurches,
       // even at 5 days/min (instead of the old 1 Hz step).
-      if(t-lastShade>66){ updateSunShade(); lastShade=t; }
+      if(t-lastShade>160){ updateSunShade(); lastShade=t; }
     }
-    drawOrr();
+    if(orrOn) drawOrr();
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -1692,7 +1693,10 @@ function updateBodies(){ if(!SKY)return; const T=julianCenturies(solarDate);
     b.mesh.position.set((gx/r)*60,0,-(gy/r)*60); });
 }
 function renderSky(){
-  if(!SKY) return; sizeSky();
+  requestAnimationFrame(renderSky);
+  if(!SKY) return;
+  const _t=performance.now(); if(_t-(SKY._last||0)<33) return; SKY._last=_t;
+  sizeSky();
   const C=map.getCenter(), brg=map.getBearing()*DEG;
   const cv=SKY.renderer.domElement, h=cv.clientHeight||window.innerHeight;
   SKY.camera.position.set(0,0,3); SKY.camera.up.set(0,1,0); SKY.camera.lookAt(0,0,0);
@@ -1726,7 +1730,6 @@ function renderSky(){
     const P=new THREE.Vector3(); SKY.luna.getWorldPosition(P);
     SKY.luna.visible = !(P.z<0 && Math.hypot(P.x,P.y) < gpx*1.08); }
   SKY.fr.render(SKY.fscene,SKY.frontCam);
-  requestAnimationFrame(renderSky);
 }
 function skyClick(e){
   if(!SKY||solarOpen) return;
