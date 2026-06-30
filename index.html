@@ -45,7 +45,7 @@
 
   /* Legend */
   #legend{position:absolute;bottom:18px;left:16px;z-index:5;background:var(--panel);border:1px solid var(--line);
-    border-radius:14px;padding:12px 14px;backdrop-filter:blur(10px);max-width:240px;max-height:240px;overflow-y:auto}
+    border-radius:14px;padding:12px 14px;backdrop-filter:blur(10px);max-width:240px;max-height:64vh;overflow-y:auto}
   #legend h3{margin:0 0 9px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600}
   .lg-row{display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12.5px}
   .sw{width:14px;height:14px;border-radius:3px;flex:none;border:1px solid rgba(255,255,255,.15)}
@@ -166,7 +166,7 @@
     #layers{width:auto;max-width:60vw;top:calc(50px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));padding:8px 9px;max-height:50vh}
     #layers .layer-btn{padding:6px 8px;font-size:12.5px}
     #layers .grp{margin:6px 4px 3px}
-    #legend{max-width:58vw;max-height:30vh;bottom:calc(104px + env(safe-area-inset-bottom));left:calc(10px + env(safe-area-inset-left));padding:9px 11px}
+    #legend{max-width:58vw;max-height:52vh;bottom:calc(104px + env(safe-area-inset-bottom));left:calc(10px + env(safe-area-inset-left));padding:9px 11px}
     /* declutter: drop the zoom +/- (pinch handles it) and the orrery inset on phones */
     .maplibregl-ctrl-group{display:none!important}
     #orrInset{display:none}
@@ -1217,7 +1217,7 @@ function clearFlow(){
 function applyFlowStyle(){
   if(!map.getLayer("flow-lines")) return;
   const m=isMobileV();
-  const wlo=m?2.4:2.0, whi=m?5.6:4.6, rlo=m?2.2:1.8, rhi=m?4.4:3.4;
+  const wlo=m?7.0:3.0, whi=m?13.0:6.5, rlo=m?2.2:1.8, rhi=m?4.4:3.4;
   const wI=["interpolate",["linear"],["zoom"], 1.5,["interpolate",["linear"],["get","w"],0,wlo,1,whi], 9,["interpolate",["linear"],["get","w"],0,wlo*3,1,whi*3]];
   const rI=["interpolate",["linear"],["zoom"], 1.5,["interpolate",["linear"],["get","w"],0,rlo,1,rhi], 9,["interpolate",["linear"],["get","w"],0,rlo*2.4,1,rhi*2.4]];
   // MapLibre keeps this surface layer for hover/click hit-testing only. The visible
